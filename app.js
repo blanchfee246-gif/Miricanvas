@@ -130,7 +130,62 @@
   }
 
   // Nominatim이 막히거나 결과가 없으면 Photon으로 한 번 더 검색
+  // ---------- 카카오 장소 검색 (키가 있을 때만) ----------
+  const KAKAO_KEY_STORAGE = STORAGE_KEY + ':kakao';
+  let kakaoReady = null; // Promise<boolean>
+
+  function getKakaoKey() {
+    if (window.KAKAO_JS_KEY) return String(window.KAKAO_JS_KEY).trim();
+    try { return (localStorage.getItem(KAKAO_KEY_STORAGE) || '').trim(); } catch (e) { return ''; }
+  }
+
+  function loadKakao() {
+    const key = getKakaoKey();
+    if (!key) return Promise.resolve(false);
+    if (kakaoReady) return kakaoReady;
+    kakaoReady = new Promise((resolve) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://dapi.kakao.com/v2/maps/sdk.js?autoload=false&libraries=services&appkey=' + encodeURIComponent(key);
+      sc.onload = () => {
+        try {
+          kakao.maps.load(() => resolve(!!(kakao.maps.services && kakao.maps.services.Places)));
+        } catch (e) { resolve(false); }
+      };
+      sc.onerror = () => resolve(false);
+      document.head.appendChild(sc);
+      setTimeout(() => resolve(false), 8000);
+    });
+    return kakaoReady;
+  }
+
+  function kakaoCall(fn) {
+    return new Promise((resolve) => {
+      try { fn((data, status) => resolve(status === kakao.maps.services.Status.OK && data.length ? data[0] : null)); }
+      catch (e) { resolve(null); }
+    });
+  }
+
+  async function geocodeKakao(query) {
+    if (!(await loadKakao())) return null;
+    const pl = await kakaoCall(cb => new kakao.maps.services.Places().keywordSearch(query, cb));
+    if (pl) {
+      return {
+        lat: parseFloat(pl.y), lng: parseFloat(pl.x),
+        address: [pl.place_name, pl.road_address_name || pl.address_name].filter(Boolean).join(' · ')
+      };
+    }
+    const ad = await kakaoCall(cb => new kakao.maps.services.Geocoder().addressSearch(query, cb));
+    if (ad) return { lat: parseFloat(ad.y), lng: parseFloat(ad.x), address: ad.address_name };
+    return null;
+  }
+
+  let lastUsedFreeApi = false;
+
   async function geocode(query) {
+    lastUsedFreeApi = false;
+    const k = await geocodeKakao(query);
+    if (k) return k;
+    lastUsedFreeApi = true;
     let networkError = null;
     try {
       const r = await geocodeNominatim(query);
@@ -166,7 +221,7 @@
         failed.push(name);
         netFail++;
       }
-      if (i < names.length - 1) await sleep(GEOCODE_DELAY_MS);
+      if (i < names.length - 1 && lastUsedFreeApi) await sleep(GEOCODE_DELAY_MS);
     }
     addBtn.disabled = false;
     input.value = '';
@@ -476,6 +531,47 @@
     setStatus('');
     render();
   });
+
+  // ---------- 카카오 키 설정 UI ----------
+  const kakaoInput = $('kakao-key');
+  const kakaoState = $('kakao-state');
+  const kakaoMsg = $('kakao-msg');
+
+  function showKakaoState(ok) {
+    kakaoState.textContent = ok ? '켜짐' : '꺼짐';
+    kakaoState.classList.toggle('on', ok);
+  }
+
+  async function checkKakao(announce) {
+    if (!getKakaoKey()) { showKakaoState(false); return; }
+    const ok = await loadKakao();
+    showKakaoState(ok);
+    if (announce) {
+      kakaoMsg.textContent = ok
+        ? '카카오 검색이 켜졌어요.'
+        : '키를 확인하지 못했어요. 키가 맞는지, 카카오 콘솔에 이 사이트 주소(' + location.origin + ')를 등록했는지, 카카오맵 사용을 켰는지 확인해 주세요.';
+      kakaoMsg.classList.toggle('error', !ok);
+    }
+  }
+
+  if (window.KAKAO_JS_KEY) {
+    $('kakao-box').hidden = true; // config.js에 키가 있으면 설정 칸 숨김
+  } else {
+    try { kakaoInput.value = localStorage.getItem(KAKAO_KEY_STORAGE) || ''; } catch (e) { /* noop */ }
+  }
+
+  $('kakao-save').addEventListener('click', () => {
+    const key = kakaoInput.value.trim();
+    try { localStorage.setItem(KAKAO_KEY_STORAGE, key); } catch (e) { /* noop */ }
+    // 이미 불러온 SDK는 교체할 수 없으므로 키를 바꾸면 새로고침
+    if (kakaoReady) { location.reload(); return; }
+    if (!key) { showKakaoState(false); kakaoMsg.textContent = ''; return; }
+    kakaoMsg.textContent = '확인 중…';
+    kakaoMsg.classList.remove('error');
+    checkKakao(true);
+  });
+
+  checkKakao(false);
 
   // ---------- 시작 ----------
   render({ fit: true });

@@ -24,6 +24,17 @@ python3 -m http.server 8000
 - **찾지 못한 곳은 지도에서 직접 찍기** — 검색이 안 되는 호텔 등은 지도에서 눌러 추가, 핀은 끌어서 위치 수정
 - 목록 클릭 시 해당 장소로 이동, 자동 저장(브라우저 localStorage)
 
+## 카카오 장소 검색 (선택)
+
+카카오 JavaScript 키를 넣으면 호텔·식당 이름으로도 정확히 검색됩니다.
+
+1. [카카오 개발자 사이트](https://developers.kakao.com)에서 앱을 만들고 **JavaScript 키**를 복사
+2. 앱 설정의 Web 플랫폼(JavaScript SDK 도메인)에 사이트 주소 등록 (예: `https://blanchfee246-gif.github.io`)
+3. 앱에서 **카카오맵** 사용 설정을 켜기
+4. 앱 화면 왼쪽 아래 **🔎 카카오 장소 검색**에 키를 붙여넣고 저장 — 또는 `config.js`의 `KAKAO_JS_KEY`에 넣기
+
+키가 없거나 검색 결과가 없으면 OpenStreetMap 검색으로 넘어갑니다.
+
 ## 사용 기술
 
 - [Leaflet](https://leafletjs.com/) (`vendor/leaflet`에 포함) + OpenStreetMap 지도 타일 (실패 시 Esri 지도로 자동 전환)

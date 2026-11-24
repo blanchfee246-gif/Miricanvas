@@ -216,3 +216,16 @@ textarea:focus { border-color: var(--route); box-shadow: 0 0 0 3px rgba(56, 103,
   .map-wrap { height: 48%; flex: none; }
   .panel-head { display: none; }
 }
+
+/* 카카오 검색 설정 */
+.kakao-box { padding: 10px 20px; border-top: 1px solid var(--line); font-size: 13px; }
+.kakao-box summary { cursor: pointer; font-weight: 600; }
+.kakao-box p { margin: 6px 0; color: var(--muted); }
+.kakao-box input {
+  flex: 1; min-width: 0;
+  padding: 7px 10px;
+  font: inherit; font-size: 13px;
+  border: 1px solid var(--line); border-radius: 8px;
+}
+.kakao-state { font-weight: 400; font-size: 11px; padding: 2px 6px; border-radius: 6px; background: #eef0f5; color: var(--muted); margin-left: 4px; }
+.kakao-state.on { background: #fee500; color: #3c1e1e; }

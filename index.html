@@ -38,6 +38,16 @@
       <ol id="place-list" class="place-list"></ol>
       <p id="empty" class="empty">아직 추가된 여행지가 없어요.</p>
 
+      <details id="kakao-box" class="kakao-box">
+        <summary>🔎 카카오 장소 검색 <span id="kakao-state" class="kakao-state">꺼짐</span></summary>
+        <p>카카오 JavaScript 키를 넣으면 호텔·식당 이름으로도 정확하게 찾아요.</p>
+        <div class="form-row">
+          <input id="kakao-key" type="text" placeholder="JavaScript 키 붙여넣기" spellcheck="false" autocapitalize="off" />
+          <button type="button" id="kakao-save" class="btn">저장</button>
+        </div>
+        <p id="kakao-msg" class="status"></p>
+      </details>
+
       <footer class="panel-foot">
         <label class="toggle"><input type="checkbox" id="loop-toggle" /> 출발지로 돌아오기</label>
         <div class="foot-btns">
@@ -57,6 +67,7 @@
   </div>
 
   <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
