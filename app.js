@@ -3,6 +3,7 @@
 
   const STORAGE_KEY = 'travel-route-map:v1';
   const GEOCODE_URL = 'https://nominatim.openstreetmap.org/search';
+  const PHOTON_URL = 'https://photon.komoot.io/api/';
   const GEOCODE_DELAY_MS = 1100; // Nominatim 이용 정책: 초당 1회 이하
 
   // ---------- 상태 ----------
@@ -12,10 +13,18 @@
 
   // ---------- 지도 ----------
   const map = L.map('map', { zoomControl: true }).setView([36.5, 127.8], 7);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  // CARTO 지도 타일: 파일을 직접 열어도(file://) 차단되지 않음
+  const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    subdomains: 'abcd',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
   }).addTo(map);
+  let tileErrorShown = false;
+  tiles.on('tileerror', () => {
+    if (tileErrorShown) return;
+    tileErrorShown = true;
+    setStatus('지도 이미지를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.', true);
+  });
 
   const markerLayer = L.layerGroup().addTo(map);
   const routeLayer = L.layerGroup().addTo(map);
@@ -82,7 +91,7 @@
   }
 
   // ---------- 지오코딩 ----------
-  async function geocode(query) {
+  async function geocodeNominatim(query) {
     const url = GEOCODE_URL + '?' + new URLSearchParams({
       q: query, format: 'jsonv2', limit: '1', 'accept-language': 'ko'
     });
@@ -94,10 +103,39 @@
     return { lat: parseFloat(r.lat), lng: parseFloat(r.lon), address: r.display_name };
   }
 
+  async function geocodePhoton(query) {
+    const url = PHOTON_URL + '?' + new URLSearchParams({ q: query, limit: '1' });
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const f = data.features && data.features[0];
+    if (!f) return null;
+    const pr = f.properties || {};
+    const address = [pr.name, pr.street, pr.district, pr.city, pr.state, pr.country]
+      .filter((v, i, a) => v && a.indexOf(v) === i).join(', ');
+    return { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], address };
+  }
+
+  // Nominatim이 막히거나 결과가 없으면 Photon으로 한 번 더 검색
+  async function geocode(query) {
+    let networkError = null;
+    try {
+      const r = await geocodeNominatim(query);
+      if (r) return r;
+    } catch (e) { networkError = e; }
+    try {
+      const r = await geocodePhoton(query);
+      if (r) return r;
+    } catch (e) { networkError = networkError || e; }
+    if (networkError) throw networkError;
+    return null;
+  }
+
   async function addPlaces(names) {
     addBtn.disabled = true;
     const failed = [];
     let added = 0;
+    let netFail = 0;
     for (let i = 0; i < names.length; i++) {
       const name = names[i];
       setStatus(`검색 중… (${i + 1}/${names.length}) ${name}`);
@@ -113,11 +151,15 @@
         }
       } catch (e) {
         failed.push(name);
+        netFail++;
       }
       if (i < names.length - 1) await sleep(GEOCODE_DELAY_MS);
     }
     addBtn.disabled = false;
-    if (failed.length) {
+    if (netFail && netFail === failed.length && !added) {
+      setStatus('장소 검색 서버에 연결하지 못했어요. 인터넷 연결을 확인하거나 잠시 후 다시 시도해 주세요.', true);
+      input.value = failed.join('\n');
+    } else if (failed.length) {
       setStatus(`찾지 못한 곳: ${failed.join(', ')} — 더 구체적으로 입력해 보세요 (예: "부산 해운대").`, true);
       input.value = failed.join('\n');
     } else {

@@ -25,7 +25,7 @@ python3 -m http.server 8000
 
 ## 사용 기술
 
-- [Leaflet](https://leafletjs.com/) + OpenStreetMap 지도 타일
-- [Nominatim](https://nominatim.org/) 장소 검색 (이용 정책에 따라 초당 1건씩 순차 검색)
+- [Leaflet](https://leafletjs.com/) (`vendor/leaflet`에 포함) + CARTO/OpenStreetMap 지도 타일
+- [Nominatim](https://nominatim.org/) 장소 검색, 실패 시 [Photon](https://photon.komoot.io/)으로 재검색 (초당 1건씩 순차 검색)
 
 > 장소를 찾지 못하면 `부산 해운대`처럼 지역명을 함께 입력해 보세요.
