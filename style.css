@@ -180,12 +180,12 @@ textarea:focus { border-color: var(--route); box-shadow: 0 0 0 3px rgba(56, 103,
 .pin-icon { background: none; border: none; }
 .pin {
   position: relative;
-  width: 34px; height: 34px;
+  width: 24px; height: 24px;
   background: var(--accent);
-  border: 3px solid #fff;
+  border: 2px solid #fff;
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, .35);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .35);
 }
 .pin span {
   position: absolute;
@@ -195,7 +195,7 @@ textarea:focus { border-color: var(--route); box-shadow: 0 0 0 3px rgba(56, 103,
   transform: rotate(45deg);
   color: #fff;
   font-weight: 800;
-  font-size: 14px;
+  font-size: 11px;
 }
 .pin.start { background: #20bf6b; }
 .pin.end { background: #3867d6; }

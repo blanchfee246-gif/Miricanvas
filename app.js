@@ -303,13 +303,45 @@
   });
 
   // ---------- 렌더링 ----------
-  function pinIcon(num, kind) {
+  const PIN = 24;          // 핀 크기(px)
+  const PIN_GAP = 22;      // 이 거리(px)보다 가까운 핀끼리는 옆으로 벌려 배치
+
+  // dx: 겹침을 피하려고 핀을 옆으로 옮기는 거리(px). 실제 위치는 작은 점으로 표시됨
+  function pinIcon(num, kind, dx) {
+    dx = dx || 0;
     return L.divIcon({
       className: 'pin-icon',
-      html: `<div class="pin ${kind}"><span>${num}</span></div>`,
-      iconSize: [34, 34],
-      iconAnchor: [17, 40],    // 회전된 핀 끝이 좌표를 가리키도록
-      popupAnchor: [0, -38]
+      html: `<div class="pin ${kind}${dx ? ' shifted' : ''}"><span>${num}</span></div>`,
+      iconSize: [PIN, PIN],
+      iconAnchor: [PIN / 2 - dx, PIN + 5],   // 회전된 핀 끝이 좌표를 가리키도록
+      popupAnchor: [dx, -PIN - 2]
+    });
+  }
+
+  // 화면에서 가까이 붙은 핀들을 묶어 가로로 나란히 펼침 (확대/축소할 때마다 다시 계산)
+  function layoutPins() {
+    const pts = places.map(p => map.latLngToLayerPoint([p.lat, p.lng]));
+    const group = places.map((_, i) => i);
+    const find = i => (group[i] === i ? i : (group[i] = find(group[i])));
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        // 핀은 세로로 길쭉하므로 위아래로는 더 넉넉하게 겹침을 판단
+        if (Math.abs(pts[i].x - pts[j].x) < PIN_GAP && Math.abs(pts[i].y - pts[j].y) < PIN + 8) group[find(j)] = find(i);
+      }
+    }
+    const members = new Map();
+    places.forEach((_, i) => {
+      const g = find(i);
+      if (!members.has(g)) members.set(g, []);
+      members.get(g).push(i);
+    });
+    members.forEach(list => {
+      list.forEach((i, k) => {
+        const m = markers.get(places[i].id);
+        if (!m) return;
+        const dx = list.length > 1 ? Math.round((k - (list.length - 1) / 2) * PIN_GAP) : 0;
+        m.setIcon(pinIcon(i + 1, kindOf(i), dx));
+      });
     });
   }
 
@@ -345,6 +377,10 @@
       });
       m.addTo(markerLayer);
       markers.set(p.id, m);
+      // 실제 위치를 가리키는 작은 점 (핀이 옆으로 밀려나도 정확한 위치를 알 수 있게)
+      L.circleMarker([p.lat, p.lng], {
+        radius: 3, color: '#fff', weight: 1.5, fillColor: '#1d2433', fillOpacity: 1, interactive: false
+      }).addTo(markerLayer);
     });
 
     legs().forEach(([a, b], idx) => {
@@ -358,6 +394,7 @@
     });
 
     renderArrows();
+    layoutPins();
 
     if (fit) fitAll();
   }
@@ -383,7 +420,7 @@
       }).addTo(arrowLayer);
     });
   }
-  map.on('zoomend', renderArrows);
+  map.on('zoomend', () => { renderArrows(); layoutPins(); });
 
   function fitAll() {
     if (!places.length) return;
