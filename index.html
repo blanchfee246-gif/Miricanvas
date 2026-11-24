@@ -25,6 +25,11 @@
         <p id="status" class="status" role="status" aria-live="polite"></p>
       </form>
 
+      <section id="pending" class="pending" hidden>
+        <h2>📍 찾지 못한 곳 <small>지도에서 직접 위치를 찍어 주세요</small></h2>
+        <ul id="pending-list"></ul>
+      </section>
+
       <div class="summary" id="summary" hidden>
         <div><span class="label">여행지</span><strong id="sum-count">0</strong>곳</div>
         <div><span class="label">총 직선거리</span><strong id="sum-dist">0</strong>km</div>
@@ -42,7 +47,13 @@
       </footer>
     </aside>
 
-    <main id="map" aria-label="여행 경로 지도"></main>
+    <main class="map-wrap">
+      <div id="map" aria-label="여행 경로 지도"></div>
+      <div id="pick-banner" class="pick-banner" hidden>
+        <span id="pick-text"></span>
+        <button type="button" id="pick-cancel" class="btn">취소</button>
+      </div>
+    </main>
   </div>
 
   <script src="vendor/leaflet/leaflet.js"></script>

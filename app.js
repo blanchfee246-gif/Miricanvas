@@ -47,6 +47,13 @@
   const emptyEl = $('empty');
   const summaryEl = $('summary');
   const loopToggle = $('loop-toggle');
+  const pendingEl = $('pending');
+  const pendingList = $('pending-list');
+  const pickBanner = $('pick-banner');
+  const pickText = $('pick-text');
+  const mapEl = $('map');
+  let pending = [];        // 검색으로 찾지 못한 이름들
+  let picking = null;      // 지도에서 위치를 찍는 중인 이름
   loopToggle.checked = loopRoute;
 
   // ---------- 저장 ----------
@@ -162,17 +169,83 @@
       if (i < names.length - 1) await sleep(GEOCODE_DELAY_MS);
     }
     addBtn.disabled = false;
+    input.value = '';
+    failed.forEach(n => { if (!pending.includes(n)) pending.push(n); });
+    renderPending();
     if (netFail && netFail === failed.length && !added) {
-      setStatus('장소 검색 서버에 연결하지 못했어요. 인터넷 연결을 확인하거나 잠시 후 다시 시도해 주세요.', true);
-      input.value = failed.join('\n');
+      setStatus('장소 검색 서버에 연결하지 못했어요. 인터넷 연결을 확인하거나, 아래 목록에서 지도에 직접 찍어 주세요.', true);
     } else if (failed.length) {
-      setStatus(`찾지 못한 곳: ${failed.join(', ')} — 더 구체적으로 입력해 보세요 (예: "부산 해운대").`, true);
-      input.value = failed.join('\n');
+      setStatus(`${added ? added + '곳 추가 · ' : ''}${failed.length}곳은 검색되지 않았어요. 아래에서 "지도에서 찍기"를 눌러 직접 위치를 정해 주세요.`, true);
     } else {
       setStatus(added ? `${added}곳을 추가했어요.` : '');
-      input.value = '';
     }
   }
+
+  // ---------- 찾지 못한 곳: 지도에서 직접 찍기 ----------
+  function renderPending() {
+    pendingEl.hidden = pending.length === 0;
+    pendingList.innerHTML = pending.map((n, i) => `
+      <li>
+        <span class="pn" title="${escapeHtml(n)}">${escapeHtml(n)}</span>
+        <button type="button" class="btn small primary" data-pick="${i}">지도에서 찍기</button>
+        <button type="button" class="icon-btn" data-drop="${i}" title="목록에서 빼기">✕</button>
+      </li>`).join('');
+  }
+
+  pendingList.addEventListener('click', (e) => {
+    const pickBtn = e.target.closest('[data-pick]');
+    const dropBtn = e.target.closest('[data-drop]');
+    if (pickBtn) startPicking(pending[Number(pickBtn.dataset.pick)]);
+    if (dropBtn) {
+      const name = pending[Number(dropBtn.dataset.drop)];
+      pending.splice(Number(dropBtn.dataset.drop), 1);
+      if (picking === name) stopPicking();
+      renderPending();
+    }
+  });
+
+  async function startPicking(name) {
+    picking = name;
+    mapEl.classList.add('picking');
+    pickText.textContent = `"${name}" 위치를 지도에서 눌러 주세요`;
+    pickBanner.hidden = false;
+    // 이름 일부(예: "소노벨 청송" → "청송")로 대략적인 지역을 찾아 지도를 옮겨 줌
+    const words = name.split(/\s+/).filter(w => w.length > 1);
+    if (words.length > 1) {
+      for (const w of words.slice().reverse()) {
+        if (picking !== name) return;
+        try {
+          const r = await geocodeNominatim(w);
+          if (r && picking === name) {
+            map.setView([r.lat, r.lng], 12);
+            pickText.textContent = `"${name}" — "${w}" 근처로 이동했어요. 정확한 위치를 눌러 주세요`;
+            return;
+          }
+        } catch (e) { /* 무시 */ }
+        await sleep(GEOCODE_DELAY_MS);
+      }
+    }
+  }
+
+  function stopPicking() {
+    picking = null;
+    mapEl.classList.remove('picking');
+    pickBanner.hidden = true;
+  }
+
+  $('pick-cancel').addEventListener('click', stopPicking);
+
+  map.on('click', (e) => {
+    if (!picking) return;
+    const name = picking;
+    places.push({ id: uid(), name, address: '지도에서 직접 지정한 위치', lat: e.latlng.lat, lng: e.latlng.lng });
+    pending = pending.filter(n => n !== name);
+    stopPicking();
+    savePlaces();
+    renderPending();
+    render();
+    setStatus(`"${name}"을(를) 추가했어요. 핀을 길게 눌러 끌면 위치를 고칠 수 있어요.`);
+  });
 
   // ---------- 렌더링 ----------
   function pinIcon(num, kind) {
@@ -206,8 +279,15 @@
 
     places.forEach((p, i) => {
       const label = i === 0 && places.length > 1 ? ' (출발)' : (i === places.length - 1 && places.length > 1 ? ' (도착)' : '');
-      const m = L.marker([p.lat, p.lng], { icon: pinIcon(i + 1, kindOf(i)), title: p.name, riseOnHover: true })
+      const m = L.marker([p.lat, p.lng], { icon: pinIcon(i + 1, kindOf(i)), title: p.name, riseOnHover: true, draggable: true })
         .bindPopup(`<strong>${i + 1}. ${escapeHtml(p.name)}${label}</strong><br><small>${escapeHtml(p.address || '')}</small>`);
+      m.on('dragend', () => {
+        const ll = m.getLatLng();
+        p.lat = ll.lat;
+        p.lng = ll.lng;
+        savePlaces();
+        render();
+      });
       m.addTo(markerLayer);
       markers.set(p.id, m);
     });
