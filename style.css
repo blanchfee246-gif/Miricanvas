@@ -1,0 +1,192 @@
+:root {
+  --bg: #f6f7fb;
+  --panel: #ffffff;
+  --text: #1d2433;
+  --muted: #6b7385;
+  --line: #e4e7ef;
+  --accent: #ff5a5f;
+  --accent-dark: #e0484d;
+  --route: #3867d6;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.panel {
+  width: 360px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  z-index: 500;
+}
+
+.panel-head { padding: 20px 20px 8px; }
+.panel-head h1 { margin: 0; font-size: 20px; }
+.sub { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+.add-form { padding: 12px 20px; border-bottom: 1px solid var(--line); }
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: none;
+}
+textarea:focus { border-color: var(--route); box-shadow: 0 0 0 3px rgba(56, 103, 214, .15); }
+
+.form-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.hint { font-size: 12px; color: var(--muted); }
+
+.btn {
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+}
+.btn:hover { background: #f1f3f8; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn.primary:hover { background: var(--accent-dark); }
+.btn.danger { color: #c0392b; }
+
+.status { min-height: 18px; margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+.status.error { color: #c0392b; }
+
+.summary {
+  display: flex;
+  gap: 20px;
+  padding: 12px 20px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+}
+.summary .label { color: var(--muted); margin-right: 6px; }
+.summary strong { font-size: 16px; margin-right: 2px; }
+
+.place-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.place {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.place:hover { background: #f4f6fb; }
+.place.dragging { opacity: .4; }
+.place.drag-over { box-shadow: inset 0 2px 0 var(--route); }
+
+.place-num {
+  flex-shrink: 0;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.place-body { flex: 1; min-width: 0; }
+.place-name { font-weight: 600; font-size: 14px; }
+.place-addr { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.place-leg { font-size: 11px; color: var(--route); margin-top: 2px; }
+
+.place-actions { display: flex; gap: 2px; flex-shrink: 0; }
+.icon-btn {
+  width: 26px; height: 26px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 14px;
+}
+.icon-btn:hover { background: #e9ecf4; color: var(--text); }
+.icon-btn:disabled { visibility: hidden; }
+
+.empty { text-align: center; color: var(--muted); font-size: 13px; padding: 24px; margin: 0; }
+
+.panel-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+}
+.toggle { font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.foot-btns { display: flex; gap: 6px; }
+
+#map { flex: 1; height: 100%; }
+
+/* 핀 마커 */
+.pin-icon { background: none; border: none; }
+.pin {
+  position: relative;
+  width: 34px; height: 34px;
+  background: var(--accent);
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .35);
+}
+.pin span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transform: rotate(45deg);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+}
+.pin.start { background: #20bf6b; }
+.pin.end { background: #3867d6; }
+.place-num.start { background: #20bf6b; }
+.place-num.end { background: #3867d6; }
+
+.route-arrow {
+  color: var(--route);
+  font-size: 14px;
+  line-height: 1;
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff;
+}
+
+/* 모바일: 지도 위, 패널 아래 */
+@media (max-width: 760px) {
+  .app { flex-direction: column-reverse; }
+  .panel { width: 100%; height: 52%; border-right: none; border-top: 1px solid var(--line); }
+  #map { height: 48%; flex: none; }
+  .panel-head { display: none; }
+}

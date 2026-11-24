@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>여행 경로 지도</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="panel">
+      <header class="panel-head">
+        <h1>🗺️ 여행 경로 지도</h1>
+        <p class="sub">여행지를 입력하면 지도에 순서대로 핀이 찍히고 경로가 이어집니다.</p>
+      </header>
+
+      <form id="add-form" class="add-form" autocomplete="off">
+        <textarea id="place-input" rows="3"
+          placeholder="여행지를 입력하세요&#10;여러 곳은 줄바꿈이나 쉼표(,)로 구분&#10;예) 경복궁, 남산타워, 해운대"></textarea>
+        <div class="form-row">
+          <button type="submit" id="add-btn" class="btn primary">지도에 추가</button>
+          <span class="hint">Enter 추가 · Shift+Enter 줄바꿈</span>
+        </div>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </form>
+
+      <div class="summary" id="summary" hidden>
+        <div><span class="label">여행지</span><strong id="sum-count">0</strong>곳</div>
+        <div><span class="label">총 직선거리</span><strong id="sum-dist">0</strong>km</div>
+      </div>
+
+      <ol id="place-list" class="place-list"></ol>
+      <p id="empty" class="empty">아직 추가된 여행지가 없어요.</p>
+
+      <footer class="panel-foot">
+        <label class="toggle"><input type="checkbox" id="loop-toggle" /> 출발지로 돌아오기</label>
+        <div class="foot-btns">
+          <button type="button" id="fit-btn" class="btn">전체 보기</button>
+          <button type="button" id="clear-btn" class="btn danger">모두 삭제</button>
+        </div>
+      </footer>
+    </aside>
+
+    <main id="map" aria-label="여행 경로 지도"></main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
