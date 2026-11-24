@@ -13,17 +13,23 @@
 
   // ---------- 지도 ----------
   const map = L.map('map', { zoomControl: true }).setView([36.5, 127.8], 7);
-  // CARTO 지도 타일: 파일을 직접 열어도(file://) 차단되지 않음
-  const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  // 기본: OpenStreetMap 타일. 불러오지 못하면 Esri 지도로 자동 전환
+  const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  let tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    subdomains: 'abcd',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    attribution: OSM_ATTR
   }).addTo(map);
-  let tileErrorShown = false;
+  let tileErrors = 0;
+  let usingFallback = false;
   tiles.on('tileerror', () => {
-    if (tileErrorShown) return;
-    tileErrorShown = true;
-    setStatus('지도 이미지를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.', true);
+    if (usingFallback || ++tileErrors < 3) return;
+    usingFallback = true;
+    map.removeLayer(tiles);
+    tiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri'
+    }).addTo(map);
+    tiles.bringToBack();
   });
 
   const markerLayer = L.layerGroup().addTo(map);
